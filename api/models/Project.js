@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");
+
 const projectSchema = new mongoose.Schema(
   {
     ownerId: { type: String, default: "rajan" }, // future: multiple developers ke liye unique ID
@@ -15,3 +17,5 @@ const projectSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+module.exports = mongoose.model("Project", projectSchema);
