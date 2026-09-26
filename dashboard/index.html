@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DevMark Dashboard</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #eee;
+      padding: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 { margin-bottom: 4px; }
+    #login-box { margin-top: 20px; }
+    input {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #1a1a1a;
+      color: #eee;
+      width: 240px;
+    }
+    button {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      background: #16a34a;
+      color: #fff;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #2a2a2a;
+      font-size: 14px;
+    }
+    th { color: #999; font-weight: 500; }
+    .verified { color: #16a34a; font-weight: 600; }
+    .unverified { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>📊 DevMark Dashboard</h1>
+  <p style="color:#999;">Track every project where your badge is installed.</p>
+
+  <div id="login-box">
+    <input type="password" id="password-input" placeholder="Enter dashboard password" />
+    <button onclick="loadDashboard()">Login</button>
+  </div>
+
+  <div id="dashboard-content"></div>
+
+  <script>
+    const API_BASE = "http://localhost:5000/api";
+
+    function loadDashboard() {
+      const password = document.getElementById("password-input").value;
+
+      fetch(`${API_BASE}/dashboard?password=${encodeURIComponent(password)}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Unauthorized");
+          return res.json();
+        })
+        .then((data) => renderTable(data.projects))
+        .catch(() => {
+          document.getElementById("dashboard-content").innerHTML =
+            '<p style="color:#f87171;">❌ Wrong password or server error.</p>';
+        });
+    }
+
+function renderTable(projects) {
+  if (!projects.length) {
+    document.getElementById("dashboard-content").innerHTML = "<p>No projects registered yet.</p>";
+    return;
+  }
+
+  const rows = projects
+    .map(
+      (p, i) => `
+    <tr>
+      <td>${p.domain}</td>
+      <td>${p.tagline || "-"}</td>
+      <td>${p.clickCount}</td>
+      <td class="${p.verified ? "verified" : "unverified"}">${p.verified ? "✓ Verified" : "Unverified"}</td>
+      <td><button onclick="toggleForm(${i})">Edit case study</button></td>
+    </tr>
+    <tr id="form-row-${i}" style="display:none;">
+      <td colspan="5">
+        <input placeholder="Problem solved" id="problem-${i}" style="width:100%; margin-bottom:6px;" />
+        <input placeholder="Tech used" id="tech-${i}" style="width:100%; margin-bottom:6px;" />
+        <input placeholder="Timeline (e.g. 2 weeks)" id="timeline-${i}" style="width:100%; margin-bottom:6px;" />
+        <button onclick="saveCaseStudy('${p.domain}', ${i})">Save</button>
+      </td>
+    </tr>
+  `
+    )
+    .join("");
+
+  document.getElementById("dashboard-content").innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Domain</th>
+          <th>Tagline</th>
+          <th>Clicks</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function toggleForm(i) {
+  const row = document.getElementById(`form-row-${i}`);
+  row.style.display = row.style.display === "none" ? "table-row" : "none";
+}
+
+function saveCaseStudy(domain, i) {
+  const password = document.getElementById("password-input").value;
+  const problem = document.getElementById(`problem-${i}`).value;
+  const techUsed = document.getElementById(`tech-${i}`).value;
+  const timeline = document.getElementById(`timeline-${i}`).value;
+
+  fetch(`${API_BASE}/case-study/${encodeURIComponent(domain)}?password=${encodeURIComponent(password)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ problem, techUsed, timeline }),
+  })
+    .then((res) => res.json())
+    .then(() => alert("Case study saved!"))
+    .catch(() => alert("Failed to save."));
+}
+  </script>
+</body>
+</html>

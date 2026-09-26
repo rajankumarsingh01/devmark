@@ -1,0 +1,56 @@
+#devmark-badge {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #111;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font: 500 12px/1 system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  transition: transform 0.15s ease;
+}
+#devmark-badge:hover { transform: scale(1.05); }
+#devmark-badge svg { width: 14px; height: 14px; }
+
+#devmark-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#devmark-overlay.hidden { display: none; }
+#devmark-modal {
+  background: #fff;
+  color: #111;
+  width: 320px;
+  max-width: 90vw;
+  border-radius: 16px;
+  padding: 20px;
+  font: 400 14px/1.5 system-ui, sans-serif;
+  position: relative;
+}
+#devmark-modal h3 { margin: 0 0 4px; font-size: 16px; }
+#devmark-modal p { margin: 0 0 12px; color: #555; }
+#devmark-modal a {
+  display: block;
+  margin-top: 8px;
+  color: #111;
+  text-decoration: none;
+  font-weight: 500;
+}
+#devmark-close {
+  position: absolute;
+  top: 10px; right: 12px;
+  cursor: pointer;
+  font-size: 18px;
+  color: #888;
+}
