@@ -5,7 +5,7 @@ const DEFAULT_CONFIG = {
   githubUrl: "https://github.com/rajankumarsingh01",
   linkedinUrl: "https://linkedin.com/in/rajankumarsingh01",
   githubUsername: "rajankumarsingh01",
-  apiBaseUrl: "http://localhost:5000/api",
+ apiBaseUrl: "https://devmark-api-beta.vercel.app/api",
 };
 
 function initDevMark(userConfig = {}) {
