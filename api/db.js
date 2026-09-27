@@ -15,7 +15,10 @@ async function connectDB() {
       .connect(process.env.MONGODB_URI, {
         bufferCommands: false,
       })
-      .then((m) => m);
+      .then((m) => {
+        console.log("✅ MongoDB connected:", m.connection.host);
+        return m;
+      });
   }
 
   cached.conn = await cached.promise;
