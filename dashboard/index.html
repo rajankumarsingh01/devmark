@@ -152,6 +152,11 @@
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #toast.success { border-color: rgba(34,197,94,0.4); }
   #toast.error { border-color: rgba(248,113,113,0.4); }
+  #toast { display: flex; align-items: center; gap: 8px; }
+
+  .devmark-icon { width: 20px; height: 20px; flex-shrink: 0; }
+  .devmark-icon-sm { width: 14px; height: 14px; flex-shrink: 0; }
+  #login-error { display: flex; align-items: center; justify-content: center; gap: 6px; }
 </style>
 </head>
 <body>
@@ -159,7 +164,11 @@
   <!-- ===== Login screen ===== -->
   <div id="login-screen">
     <div id="login-card">
-      <div class="devmark-logo">📊</div>
+      <div class="devmark-logo">
+        <svg class="devmark-icon" style="width:32px;height:32px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/>
+        </svg>
+      </div>
       <h1>DevMark Dashboard</h1>
       <p>Track every project where your badge is installed.</p>
       <input type="password" id="password-input" placeholder="Dashboard password" />
@@ -171,7 +180,12 @@
   <!-- ===== App shell ===== -->
   <div id="app">
     <div id="topbar">
-      <h1>📊 DevMark</h1>
+      <h1>
+        <svg class="devmark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/>
+        </svg>
+        DevMark
+      </h1>
       <button id="logout-btn">Logout</button>
     </div>
 
@@ -240,9 +254,13 @@ let TOKEN = null;
 let CURRENT_DOMAIN = null;
 let PROJECTS_CACHE = [];
 
+const ICON_CHECK = `<svg class="devmark-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>`;
+const ICON_ALERT = `<svg class="devmark-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>`;
+
 function showToast(message, type = "success") {
   const toast = document.getElementById("toast");
-  toast.textContent = message;
+  const icon = type === "success" ? ICON_CHECK : ICON_ALERT;
+  toast.innerHTML = `${icon} ${message}`;
   toast.className = `show ${type}`;
   setTimeout(() => { toast.className = ""; }, 2600);
 }
@@ -274,7 +292,7 @@ function login() {
       loadDashboard();
     })
     .catch(() => {
-      errorEl.textContent = "❌ Wrong password or server error.";
+      errorEl.innerHTML = `${ICON_ALERT} Wrong password or server error.`;
     });
 }
 
@@ -343,7 +361,7 @@ function renderGrid(projects) {
           <p>${p.domain}</p>
         </div>
         <span class="chip ${p.verified ? "verified" : "unverified"}">
-          ${p.verified ? "✓ Verified" : "Unverified"}
+          ${p.verified ? `${ICON_CHECK} Verified` : "Unverified"}
         </span>
       </div>
       <div class="project-stats-row">

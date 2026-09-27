@@ -1,46 +1,87 @@
-# DevMark — Upgrade Notes
+# DevMark
 
-Ye upgrade wahi project hai, bas UI + security + kuch features upar ki level pe.
-Neeche **exact PowerShell commands** hai jo local setup ke liye chahiye honge (jab tum
-setup karoge).
+**DevMark** is a lightweight "Built by" badge widget you can drop into any of your
+deployed projects. It shows a small floating badge in the corner — visitors can click
+it to see a live profile card with your name, role, skills, GitHub stats, verification
+status, and links to your portfolio, GitHub, LinkedIn, and resume.
 
-## Kya-kya badla
+Think of it as a signature stamp for every project you ship.
 
-**Security fix (sabse zaroori):**
-- Dashboard password ab URL me (`?password=...`) nahi jaata. Ab `/api/auth/login` pe
-  POST karke ek short-lived JWT milta hai (12h), jo Authorization header me jaata hai.
-  Isliye `jsonwebtoken` package add kiya hai.
-- `express` aur `mongoose` ke version numbers original zip me galat the (v5.2.1 / v9.10.2
-  jaise versions abhi exist hi nahi karte) — realistic stable versions pe fix kar diya
-  (`express@4.19.2`, `mongoose@8.5.0`).
+## Features
 
-**Naye Project fields:** `avatarUrl`, `role`, `skills[]`, `available`, `resumeUrl`
-**Naye API routes:** `POST /api/auth/login`, `PUT/GET /api/profile/:domain`,
-`GET /api/dashboard/timeseries/:domain` (7-din ka daily click data, chart ke liye)
+- 🪪 **Badge widget** — small, animated, non-intrusive floating badge (bottom-right by
+  default), collapses to just your avatar on scroll
+- 🪟 **Profile overlay** — avatar, role, availability status, skills chips, live GitHub
+  stats (repos/followers with count-up animation), verified-build checkmark, case study,
+  and CTA links (Portfolio / GitHub / LinkedIn / Resume / Hire Me)
+- ♿ **Accessible** — keyboard-operable badge, Escape to close, focus trap inside the
+  overlay
+- 📊 **Dashboard** — password-protected (JWT-based) dashboard to see every project the
+  badge is installed on, total clicks, verified count, and a 7-day click chart per
+  project
+- 🔒 **Rate-limited API** — protects the free-tier database from abuse
+- 🆓 **Free-tier friendly** — built to run entirely on Vercel + MongoDB Atlas free tiers
 
-**Widget (badge + overlay):**
-- Avatar, "available for work" pulsing dot, skills chips, animated entrance,
-  glass/blur badge, smooth open/close overlay animation, GitHub stats ab count-up
-  animation ke sath, skeleton loaders (plain "Loading..." text ki jagah), Hire Me /
-  Resume CTA buttons (agar config me diye ho).
+## Tech stack
 
-**Dashboard:**
-- Proper login screen + JWT (sessionStorage me store, tab band karne pe expire)
-- Overview stat cards (total projects / total clicks / verified count)
-- Table ki jagah project **cards grid**, har card me 7-din ka mini line chart (Chart.js)
-- Edit ab ek modal me — profile fields + case study ek jagah
-- `alert()` hata ke toast notifications
+| Part      | Stack                                              |
+|-----------|-----------------------------------------------------|
+| Widget    | Vanilla JS + CSS (no build step, no framework)       |
+| API       | Node.js, Express, Mongoose, JWT (`jsonwebtoken`)     |
+| Database  | MongoDB (Atlas)                                      |
+| Dashboard | Plain HTML/CSS/JS + Chart.js (via CDN)               |
+| Hosting   | Vercel (API + serverless functions)                  |
 
-## Deferred (agla phase — infra decisions chahiye isliye abhi nahi kiya)
-- Public profile page (`devmark.rajankumarsingh.me/rajan`) — custom domain/hosting decide karna hoga
-- Widget ko npm package banake publish karna (`npm i devmark-widget`) — npm account chahiye
-- Referrer / geo (country-wise) click tracking — ek geo-IP service integrate karna hoga
+## Folder structure
+devmark/
+├── api/ # Express API (deployed on Vercel)
+│ ├── crypto/
+│ │ └── signToken.js # per-domain verification token (HMAC)
+│ ├── middleware/
+│ │ └── auth.js # JWT auth guard for dashboard routes
+│ ├── models/
+│ │ ├── Project.js
+│ │ └── ClickEvent.js
+│ ├── routes/
+│ │ ├── auth.js # POST /api/auth/login
+│ │ ├── register.js # POST /api/register
+│ │ ├── track.js # POST /api/track
+│ │ ├── stats.js # GET /api/stats/:domain
+│ │ ├── github.js # GET /api/github/:username
+│ │ ├── verify.js # GET /api/verify/:domain
+│ │ ├── caseStudy.js # GET/PUT /api/case-study/:domain
+│ │ ├── profile.js # GET/PUT /api/profile/:domain
+│ │ └── dashboard.js # GET /api/dashboard, /api/dashboard/timeseries/:domain
+│ ├── db.js
+│ ├── index.js
+│ └── .env.example
+├── widget/
+│ └── src/
+│ ├── badge.js # DevMark.init({...}) — embed this in any project
+│ ├── overlay.js
+│ ├── badge.css
+│ └── test.html # local demo page for the widget
+└── dashboard/
+└── index.html # standalone dashboard (open directly in browser)
 
----
+## API reference
 
-## Setup (PowerShell)
+| Method | Route                              | Auth | Description |
+|--------|-------------------------------------|------|-------------|
+| POST   | `/api/auth/login`                   | —    | Exchange dashboard password for a 12h JWT |
+| POST   | `/api/register`                     | —    | Register/upsert a project by domain |
+| POST   | `/api/track`                        | —    | Log a click/view event |
+| GET    | `/api/stats/:domain`                | —    | Click/view counts for a project |
+| GET    | `/api/github/:username`             | —    | Cached GitHub public stats (10 min TTL) |
+| GET    | `/api/verify/:domain`               | —    | Whether a project's install is verified |
+| GET/PUT| `/api/case-study/:domain`           | PUT only | Problem/tech/timeline for the overlay |
+| GET/PUT| `/api/profile/:domain`              | PUT only | Avatar, role, skills, availability, resume link |
+| GET    | `/api/dashboard`                    | ✅ Bearer JWT | All projects + overview stats |
+| GET    | `/api/dashboard/timeseries/:domain` | ✅ Bearer JWT | Daily click counts (last N days) |
 
-### 1) API
+## Setup
+
+### 1. API
 
 ```powershell
 cd api
@@ -48,31 +89,62 @@ npm install
 copy .env.example .env
 ```
 
-`.env` file khol ke apne values daalo (MONGODB_URI, GITHUB_TOKEN, JWT_SIGNING_SECRET,
-DASHBOARD_PASSWORD).
+Fill in `.env`:
+MONGODB_URI=your_mongodb_connection_string
+PORT=5000
+GITHUB_TOKEN=your_github_personal_access_token
+JWT_SIGNING_SECRET=your_random_secret_string
+DASHBOARD_PASSWORD=your_dashboard_password
 
 ```powershell
 npm run dev
 ```
 
-### 2) Widget test page
+### 2. Embed the widget in a project
 
-Bas `widget/src/test.html` ko browser me kholo (double-click), koi build step nahi
-chahiye. Local API test karna ho to `apiBaseUrl` ko `test.html` me temporarily
-`http://localhost:5000/api` kar dena.
+Add before `</body>` on the site you want tagged:
 
-### 3) Dashboard
+```html
+<link rel="stylesheet" href="https://your-widget-host/badge.css">
+<script src="https://your-widget-host/overlay.js"></script>
+<script src="https://your-widget-host/badge.js"></script>
+<script>
+  DevMark.init({
+    tagline: "Built this project",
+    role: "Full-Stack Developer",
+    githubUsername: "your-github-username",
+    available: true,
+    skills: ["React", "Node.js", "MongoDB", "Express"],
+    position: "bottom-right", // bottom-right | bottom-left | top-right | top-left
+    // resumeUrl / hireMeUrl: add once you have real links
+  });
+</script>
+```
 
-`dashboard/index.html` ko bhi seedha browser me khol sakte ho. Deployed API use kar
-raha hai by default (`devmark-api-beta.vercel.app`) — agar local API test karni ho to
-`index.html` ke top pe `API_BASE` variable change kar do.
+Locally, just open `widget/src/test.html` directly in a browser — no build step needed.
 
-### 4) Deploy (jab ready ho)
+### 3. Dashboard
+
+Open `dashboard/index.html` directly in a browser. Log in with your
+`DASHBOARD_PASSWORD`. It talks to the deployed API by default — change the
+`API_BASE` constant at the top of the `<script>` to point at a local API if needed.
+
+### 4. Deploy
 
 ```powershell
 cd api
 vercel --prod
 ```
 
-Vercel dashboard me environment variables (MONGODB_URI, GITHUB_TOKEN,
-JWT_SIGNING_SECRET, DASHBOARD_PASSWORD) add karna mat bhoolna.
+Add the same environment variables in the Vercel project's Settings →
+Environment Variables, then redeploy.
+
+## Roadmap / not yet built
+
+- Public profile page (e.g. `devmark.<domain>/rajan`) listing every project
+- Widget distributed as an npm package (`npm i devmark-widget`)
+- Referrer / geo (country-level) click analytics
+
+## License
+
+Personal project — not currently licensed for reuse.
