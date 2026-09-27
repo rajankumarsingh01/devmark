@@ -1,56 +1,227 @@
+/* ====== DevMark Badge ====== */
+@keyframes devmark-pop-in {
+  0%   { opacity: 0; transform: translateY(16px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes devmark-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  70%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+@keyframes devmark-shimmer {
+  0%   { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
 #devmark-badge {
   position: fixed;
-  bottom: 16px;
-  right: 16px;
+  bottom: 18px;
+  right: 18px;
   z-index: 999999;
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: #111;
+  gap: 8px;
+  background: linear-gradient(145deg, rgba(20,20,24,0.92), rgba(8,8,10,0.92));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: #fff;
-  padding: 8px 12px;
+  padding: 8px 14px 8px 8px;
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 999px;
-  font: 500 12px/1 system-ui, sans-serif;
+  font: 500 12.5px/1 system-ui, -apple-system, sans-serif;
   cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
-  transition: transform 0.15s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  opacity: 0;
+  animation: devmark-pop-in 0.45s ease 0.6s forwards;
 }
-#devmark-badge:hover { transform: scale(1.05); }
-#devmark-badge svg { width: 14px; height: 14px; }
+#devmark-badge:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+}
+#devmark-badge svg {
+  width: 15px;
+  height: 15px;
+  color: #facc15;
+  flex-shrink: 0;
+}
+#devmark-badge-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.25);
+  flex-shrink: 0;
+}
+#devmark-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: devmark-pulse 2s infinite;
+  flex-shrink: 0;
+}
 
+/* position variants — DevMark.init({ position: "bottom-left" }) etc set data-position */
+#devmark-badge[data-position="bottom-left"] { right: auto; left: 18px; }
+#devmark-badge[data-position="top-right"]   { bottom: auto; top: 18px; }
+#devmark-badge[data-position="top-left"]    { bottom: auto; top: 18px; right: auto; left: 18px; }
+
+/* ====== Overlay ====== */
 #devmark-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(10,10,12,0.6);
+  backdrop-filter: blur(2px);
   z-index: 1000000;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 #devmark-overlay.hidden { display: none; }
+#devmark-overlay.devmark-visible { opacity: 1; }
+
 #devmark-modal {
-  background: #fff;
-  color: #111;
-  width: 320px;
-  max-width: 90vw;
-  border-radius: 16px;
-  padding: 20px;
-  font: 400 14px/1.5 system-ui, sans-serif;
+  background: #111114;
+  color: #f4f4f5;
+  width: 340px;
+  max-width: 100%;
+  border-radius: 20px;
+  padding: 22px;
+  font: 400 14px/1.5 system-ui, -apple-system, sans-serif;
   position: relative;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  transform: translateY(10px) scale(0.97);
+  opacity: 0;
+  transition: transform 0.22s ease, opacity 0.22s ease;
 }
-#devmark-modal h3 { margin: 0 0 4px; font-size: 16px; }
-#devmark-modal p { margin: 0 0 12px; color: #555; }
-#devmark-modal a {
-  display: block;
-  margin-top: 8px;
-  color: #111;
-  text-decoration: none;
-  font-weight: 500;
+#devmark-overlay.devmark-visible #devmark-modal {
+  transform: translateY(0) scale(1);
+  opacity: 1;
 }
+
 #devmark-close {
   position: absolute;
-  top: 10px; right: 12px;
+  top: 12px; right: 14px;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 20px;
+  line-height: 1;
   color: #888;
+  transition: color 0.15s ease;
 }
+#devmark-close:hover { color: #fff; }
+
+#devmark-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+#devmark-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.12);
+  flex-shrink: 0;
+  background: #222;
+}
+#devmark-modal h3 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+#devmark-role { margin: 2px 0 0; color: #a1a1aa; font-size: 12.5px; }
+#devmark-modal > p.devmark-tagline { margin: 10px 0 12px; color: #d4d4d8; }
+
+.devmark-verified-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.devmark-verified-chip.is-verified { background: rgba(34,197,94,0.15); color: #4ade80; }
+.devmark-verified-chip.is-unverified { background: rgba(255,255,255,0.08); color: #9ca3af; }
+
+.devmark-available-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #22c55e; display: inline-block; margin-right: 5px;
+  animation: devmark-pulse 2s infinite;
+}
+
+.devmark-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 12px;
+}
+.devmark-skill-chip {
+  font-size: 11px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #e4e4e7;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+#devmark-github-stats {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #d4d4d8;
+}
+#devmark-github-stats strong { color: #fff; }
+.devmark-stat-num { font-weight: 700; color: #fff; }
+
+.devmark-skeleton-line {
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #1c1c1f 0%, #29292e 50%, #1c1c1f 100%);
+  background-size: 200px 100%;
+  animation: devmark-shimmer 1.2s infinite linear;
+  margin-bottom: 6px;
+}
+.devmark-skeleton-line:last-child { width: 60%; margin-bottom: 0; }
+
+.devmark-case-study {
+  background: rgba(56,189,248,0.07);
+  border: 1px solid rgba(56,189,248,0.15);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #d4d4d8;
+  line-height: 1.7;
+}
+.devmark-case-study strong { color: #7dd3fc; }
+
+.devmark-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.devmark-links a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 13px;
+  transition: background 0.15s ease;
+}
+.devmark-links a:hover { background: rgba(255,255,255,0.1); }
+.devmark-links a.devmark-cta-primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+.devmark-links a.devmark-cta-primary:hover { filter: brightness(1.08); }

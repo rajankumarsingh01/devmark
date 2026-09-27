@@ -10,6 +10,8 @@ const githubRoute = require("./routes/github");
 const verifyRoute = require("./routes/verify");
 const dashboardRoute = require("./routes/dashboard");
 const caseStudyRoute = require("./routes/caseStudy");
+const profileRoute = require("./routes/profile");
+const authRoute = require("./routes/auth");
 
 const app = express();
 
@@ -29,6 +31,7 @@ app.use(async (req, res, next) => {
 
 app.get("/", (req, res) => res.send("DevMark API is running ✅"));
 
+app.use("/api/auth", authRoute);
 app.use("/api/register", registerRoute);
 app.use("/api/track", trackRoute);
 app.use("/api/stats", statsRoute);
@@ -36,6 +39,7 @@ app.use("/api/github", githubRoute);
 app.use("/api/verify", verifyRoute);
 app.use("/api/dashboard", dashboardRoute);
 app.use("/api/case-study", caseStudyRoute);
+app.use("/api/profile", profileRoute);
 
 const PORT = process.env.PORT || 5000;
 if (require.main === module) {

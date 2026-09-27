@@ -3,13 +3,23 @@
 <head>
   <link rel="stylesheet" href="badge.css">
 </head>
-<body>
+<body style="background:#e5e5e5; font-family:system-ui, sans-serif;">
   <h1>Test Page</h1>
+  <p>Badge bottom-right corner me dikhega, click karke overlay kholo.</p>
 
   <script src="overlay.js"></script>
   <script src="badge.js"></script>
   <script>
-    DevMark.init({ tagline: "Testing my badge widget" });
+    DevMark.init({
+      tagline: "Testing my badge widget",
+      role: "Full-Stack Developer",
+      avatarUrl: "https://i.pravatar.cc/100?img=12", // apna avatar URL yaha lagao
+      available: true,
+      skills: ["React", "Node.js", "MongoDB", "Express"],
+      resumeUrl: "https://rajankumarsingh.me/resume.pdf",
+      // hireMeUrl: "https://rajankumarsingh.me/#contact",
+      position: "bottom-right",
+    });
   </script>
 </body>
 </html>

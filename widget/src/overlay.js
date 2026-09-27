@@ -3,29 +3,72 @@ function createOverlay(config) {
   overlay.id = "devmark-overlay";
   overlay.className = "hidden";
 
+  const skillsHtml = (config.skills || []).length
+    ? `<div class="devmark-skills">${config.skills
+        .map((s) => `<span class="devmark-skill-chip">${s}</span>`)
+        .join("")}</div>`
+    : "";
+
   overlay.innerHTML = `
     <div id="devmark-modal">
       <span id="devmark-close">&times;</span>
-      <h3>${config.name}</h3>
-      <p>${config.tagline}</p>
-      <div id="devmark-github-stats">
-        <p style="color:#999; font-size:12px;">Loading tech stats...</p>
+      <div id="devmark-header">
+        ${
+          config.avatarUrl
+            ? `<img id="devmark-avatar" src="${config.avatarUrl}" alt="${config.name}" />`
+            : ""
+        }
+        <div>
+          <h3>${config.available ? `<span class="devmark-available-dot" title="Available for work"></span>` : ""}${config.name}</h3>
+          ${config.role ? `<p id="devmark-role">${config.role}</p>` : ""}
+        </div>
       </div>
-      <a href="${config.portfolioUrl}" target="_blank" rel="noopener">🌐 Portfolio</a>
-      <a href="${config.githubUrl}" target="_blank" rel="noopener">💻 GitHub</a>
-      <a href="${config.linkedinUrl}" target="_blank" rel="noopener">🔗 LinkedIn</a>
+      <p class="devmark-tagline">${config.tagline}</p>
+      ${skillsHtml}
+      <div id="devmark-github-stats">
+        <div class="devmark-skeleton-line"></div>
+        <div class="devmark-skeleton-line"></div>
+      </div>
+      <div id="devmark-case-study-slot"></div>
+      <div class="devmark-links">
+        ${config.hireMeUrl ? `<a class="devmark-cta-primary" href="${config.hireMeUrl}" target="_blank" rel="noopener">💼 Hire Me</a>` : ""}
+        <a href="${config.portfolioUrl}" target="_blank" rel="noopener">🌐 Portfolio</a>
+        <a href="${config.githubUrl}" target="_blank" rel="noopener">💻 GitHub</a>
+        <a href="${config.linkedinUrl}" target="_blank" rel="noopener">🔗 LinkedIn</a>
+        ${config.resumeUrl ? `<a href="${config.resumeUrl}" target="_blank" rel="noopener">📄 Resume</a>` : ""}
+      </div>
+      <div id="devmark-verified-slot" style="margin-top:10px;"></div>
     </div>
   `;
 
   document.body.appendChild(overlay);
 
+  function closeOverlay() {
+    overlay.classList.remove("devmark-visible");
+    // CSS transition (0.22s) khatam hone do, phir display:none lagao
+    setTimeout(() => overlay.classList.add("hidden"), 200);
+  }
+
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay || e.target.id === "devmark-close") {
-      overlay.classList.add("hidden");
+      closeOverlay();
     }
   });
 
   return overlay;
+}
+
+// 0 se target number tak smoothly count-up animation
+function animateCount(el, target, duration = 700) {
+  const start = 0;
+  const startTime = performance.now();
+  function tick(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const value = Math.round(start + (target - start) * progress);
+    el.textContent = value;
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
 
 function loadGithubStats(config) {
@@ -45,31 +88,32 @@ function loadGithubStats(config) {
         : "";
 
       statsEl.innerHTML = `
-        <div style="background:#f5f5f5; border-radius:8px; padding:8px 10px; margin-bottom:12px; font-size:12px; color:#333;">
-          📦 ${data.publicRepos} public repos &nbsp; · &nbsp; 👥 ${data.followers} followers
-          ${repoLine ? `<br/>${repoLine}` : ""}
-        </div>
+        📦 <span class="devmark-stat-num" id="devmark-repo-count">0</span> public repos
+        &nbsp;·&nbsp;
+        👥 <span class="devmark-stat-num" id="devmark-follower-count">0</span> followers
+        ${repoLine ? `<br/>${repoLine}` : ""}
       `;
+
+      const repoEl = document.getElementById("devmark-repo-count");
+      const followerEl = document.getElementById("devmark-follower-count");
+      if (repoEl) animateCount(repoEl, data.publicRepos || 0);
+      if (followerEl) animateCount(followerEl, data.followers || 0);
     })
     .catch(() => {
       statsEl.innerHTML = "";
     });
 }
 
-
 function loadVerificationStatus(config, domain) {
   fetch(`${config.apiBaseUrl}/verify/${encodeURIComponent(domain)}`)
     .then((res) => res.json())
     .then((data) => {
-      const modal = document.getElementById("devmark-modal");
-      if (!modal) return;
+      const slot = document.getElementById("devmark-verified-slot");
+      if (!slot) return;
 
-      const badge = document.createElement("div");
-      badge.style.cssText = "font-size:11px; margin-top:10px; font-weight:600;";
-      badge.innerHTML = data.verified
-        ? `<span style="color:#16a34a;">✓ Verified Build</span>`
-        : `<span style="color:#999;">Unverified</span>`;
-      modal.appendChild(badge);
+      slot.innerHTML = data.verified
+        ? `<span class="devmark-verified-chip is-verified">✓ Verified Build</span>`
+        : `<span class="devmark-verified-chip is-unverified">Unverified</span>`;
     })
     .catch(() => {});
 }
@@ -82,20 +126,16 @@ function loadCaseStudy(config, domain) {
       const { problem, techUsed, timeline } = data.caseStudy;
       if (!problem && !techUsed && !timeline) return;
 
-      const modal = document.getElementById("devmark-modal");
-      if (!modal) return;
+      const slot = document.getElementById("devmark-case-study-slot");
+      if (!slot) return;
 
-      const box = document.createElement("div");
-      box.style.cssText =
-        "background:#f0f9ff; border-radius:8px; padding:10px 12px; margin:10px 0; font-size:12px; color:#333; line-height:1.6;";
-      box.innerHTML = `
-        ${problem ? `<div><strong>Problem:</strong> ${problem}</div>` : ""}
-        ${techUsed ? `<div><strong>Tech:</strong> ${techUsed}</div>` : ""}
-        ${timeline ? `<div><strong>Timeline:</strong> ${timeline}</div>` : ""}
+      slot.innerHTML = `
+        <div class="devmark-case-study">
+          ${problem ? `<div><strong>Problem:</strong> ${problem}</div>` : ""}
+          ${techUsed ? `<div><strong>Tech:</strong> ${techUsed}</div>` : ""}
+          ${timeline ? `<div><strong>Timeline:</strong> ${timeline}</div>` : ""}
+        </div>
       `;
-
-      const linksStart = modal.querySelector("a");
-      modal.insertBefore(box, linksStart);
     })
     .catch(() => {});
 }

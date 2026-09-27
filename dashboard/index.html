@@ -1,144 +1,455 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>DevMark Dashboard</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #0f0f0f;
-      color: #eee;
-      padding: 40px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    h1 { margin-bottom: 4px; }
-    #login-box { margin-top: 20px; }
-    input {
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #333;
-      background: #1a1a1a;
-      color: #eee;
-      width: 240px;
-    }
-    button {
-      padding: 8px 16px;
-      border-radius: 6px;
-      border: none;
-      background: #16a34a;
-      color: #fff;
-      cursor: pointer;
-      margin-left: 8px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 24px;
-    }
-    th, td {
-      text-align: left;
-      padding: 10px 12px;
-      border-bottom: 1px solid #2a2a2a;
-      font-size: 14px;
-    }
-    th { color: #999; font-weight: 500; }
-    .verified { color: #16a34a; font-weight: 600; }
-    .unverified { color: #888; }
-  </style>
-</head>
-<body>
-  <h1>📊 DevMark Dashboard</h1>
-  <p style="color:#999;">Track every project where your badge is installed.</p>
-
-  <div id="login-box">
-    <input type="password" id="password-input" placeholder="Enter dashboard password" />
-    <button onclick="loadDashboard()">Login</button>
-  </div>
-
-  <div id="dashboard-content"></div>
-
-  <script>
- const API_BASE = "https://devmark-api-beta.vercel.app/api";
-
-    function loadDashboard() {
-      const password = document.getElementById("password-input").value;
-
-      fetch(`${API_BASE}/dashboard?password=${encodeURIComponent(password)}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Unauthorized");
-          return res.json();
-        })
-        .then((data) => renderTable(data.projects))
-        .catch(() => {
-          document.getElementById("dashboard-content").innerHTML =
-            '<p style="color:#f87171;">❌ Wrong password or server error.</p>';
-        });
-    }
-
-function renderTable(projects) {
-  if (!projects.length) {
-    document.getElementById("dashboard-content").innerHTML = "<p>No projects registered yet.</p>";
-    return;
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DevMark Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0b0d;
+    --panel: #141417;
+    --panel-2: #1b1b1f;
+    --border: #26262b;
+    --text: #f4f4f5;
+    --muted: #9a9aa2;
+    --accent: #6366f1;
+    --accent-2: #8b5cf6;
+    --green: #22c55e;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: radial-gradient(circle at top, #17171b, var(--bg) 60%);
+    color: var(--text);
+    min-height: 100vh;
   }
 
-  const rows = projects
+  /* ---------- Login screen ---------- */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #login-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 340px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    text-align: center;
+  }
+  #login-card .devmark-logo { font-size: 28px; margin-bottom: 4px; }
+  #login-card h1 { font-size: 18px; margin: 0 0 4px; }
+  #login-card p { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  #login-card input {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  #login-card input:focus { outline: 2px solid var(--accent); }
+  #login-card button {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #login-card button:hover { filter: brightness(1.08); }
+  #login-error { color: var(--red); font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+
+  /* ---------- App shell ---------- */
+  #app { display: none; max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+  #topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  #topbar h1 { font-size: 20px; margin: 0; display: flex; align-items: center; gap: 8px; }
+  #logout-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  #logout-btn:hover { color: var(--text); border-color: #3a3a40; }
+
+  /* ---------- Overview cards ---------- */
+  #overview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 26px; }
+  .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+  .stat-card .stat-value { font-size: 24px; font-weight: 700; }
+  .stat-card .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ---------- Project cards ---------- */
+  #projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .project-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+  .project-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .project-card-head h3 { margin: 0 0 2px; font-size: 15px; word-break: break-all; }
+  .project-card-head p { margin: 0; color: var(--muted); font-size: 12.5px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+  .chip.verified { background: rgba(34,197,94,0.15); color: var(--green); }
+  .chip.unverified { background: rgba(255,255,255,0.06); color: var(--muted); }
+
+  .project-stats-row { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 8px; }
+  .click-count { font-size: 22px; font-weight: 700; }
+  .click-count span { font-size: 11px; color: var(--muted); font-weight: 500; display: block; }
+
+  canvas.spark { max-height: 46px; }
+
+  .card-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .card-actions button {
+    flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text); font-size: 12.5px; cursor: pointer;
+  }
+  .card-actions button:hover { border-color: var(--accent); }
+
+  #empty-state { color: var(--muted); text-align: center; padding: 60px 0; }
+
+  /* ---------- Edit modal ---------- */
+  #edit-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px;
+  }
+  #edit-overlay.open { display: flex; }
+  #edit-modal {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 22px; width: 100%; max-width: 420px; max-height: 88vh; overflow-y: auto;
+  }
+  #edit-modal h3 { margin: 0 0 14px; font-size: 16px; }
+  #edit-modal label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 4px; }
+  #edit-modal input {
+    width: 100%; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text); font-size: 13px;
+  }
+  #edit-modal .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+  #edit-modal .checkbox-row input { width: auto; }
+  #edit-modal .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+  #edit-modal .modal-actions button { flex: 1; padding: 10px; border-radius: 9px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #edit-cancel { background: var(--panel-2); color: var(--text); border: 1px solid var(--border) !important; }
+  #edit-save { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
+
+  /* ---------- Toast ---------- */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 12px 18px; border-radius: 10px; font-size: 13px; opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease; z-index: 200; pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.success { border-color: rgba(34,197,94,0.4); }
+  #toast.error { border-color: rgba(248,113,113,0.4); }
+</style>
+</head>
+<body>
+
+  <!-- ===== Login screen ===== -->
+  <div id="login-screen">
+    <div id="login-card">
+      <div class="devmark-logo">📊</div>
+      <h1>DevMark Dashboard</h1>
+      <p>Track every project where your badge is installed.</p>
+      <input type="password" id="password-input" placeholder="Dashboard password" />
+      <button id="login-btn">Login</button>
+      <div id="login-error"></div>
+    </div>
+  </div>
+
+  <!-- ===== App shell ===== -->
+  <div id="app">
+    <div id="topbar">
+      <h1>📊 DevMark</h1>
+      <button id="logout-btn">Logout</button>
+    </div>
+
+    <div id="overview">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-projects">-</div>
+        <div class="stat-label">Total Projects</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-clicks">-</div>
+        <div class="stat-label">Total Clicks</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-verified">-</div>
+        <div class="stat-label">Verified Builds</div>
+      </div>
+    </div>
+
+    <div id="projects-grid"></div>
+    <div id="empty-state" style="display:none;">No projects registered yet.</div>
+  </div>
+
+  <!-- ===== Edit modal ===== -->
+  <div id="edit-overlay">
+    <div id="edit-modal">
+      <h3 id="edit-modal-title">Edit project</h3>
+
+      <label>Role (e.g. Full-Stack Developer)</label>
+      <input id="edit-role" />
+
+      <label>Avatar URL</label>
+      <input id="edit-avatarUrl" />
+
+      <label>Skills (comma separated)</label>
+      <input id="edit-skills" placeholder="React, Node.js, MongoDB" />
+
+      <label>Resume URL</label>
+      <input id="edit-resumeUrl" />
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="edit-available" />
+        <label style="margin:0;">Available for freelance / full-time</label>
+      </div>
+
+      <label>Problem solved</label>
+      <input id="edit-problem" />
+
+      <label>Tech used</label>
+      <input id="edit-tech" />
+
+      <label>Timeline (e.g. 2 weeks)</label>
+      <input id="edit-timeline" />
+
+      <div class="modal-actions">
+        <button id="edit-cancel">Cancel</button>
+        <button id="edit-save">Save changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+<script>
+const API_BASE = "https://devmark-api-beta.vercel.app/api";
+let TOKEN = null;
+let CURRENT_DOMAIN = null;
+let PROJECTS_CACHE = [];
+
+function showToast(message, type = "success") {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.className = `show ${type}`;
+  setTimeout(() => { toast.className = ""; }, 2600);
+}
+
+document.getElementById("login-btn").addEventListener("click", login);
+document.getElementById("password-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") login();
+});
+
+function login() {
+  const password = document.getElementById("password-input").value;
+  const errorEl = document.getElementById("login-error");
+  errorEl.textContent = "";
+
+  fetch(`${API_BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error("Wrong password");
+      return res.json();
+    })
+    .then((data) => {
+      TOKEN = data.token;
+      sessionStorage.setItem("devmark_token", TOKEN);
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      loadDashboard();
+    })
+    .catch(() => {
+      errorEl.textContent = "❌ Wrong password or server error.";
+    });
+}
+
+document.getElementById("logout-btn").addEventListener("click", () => {
+  TOKEN = null;
+  sessionStorage.removeItem("devmark_token");
+  document.getElementById("app").style.display = "none";
+  document.getElementById("login-screen").style.display = "flex";
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = sessionStorage.getItem("devmark_token");
+  if (saved) {
+    TOKEN = saved;
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    loadDashboard();
+  }
+});
+
+function authHeaders() {
+  return { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" };
+}
+
+function loadDashboard() {
+  fetch(`${API_BASE}/dashboard`, { headers: authHeaders() })
+    .then((res) => {
+      if (res.status === 401) throw new Error("unauthorized");
+      return res.json();
+    })
+    .then((data) => {
+      PROJECTS_CACHE = data.projects || [];
+      renderOverview(data.overview);
+      renderGrid(PROJECTS_CACHE);
+    })
+    .catch(() => {
+      showToast("Session expired, please login again.", "error");
+      document.getElementById("logout-btn").click();
+    });
+}
+
+function renderOverview(overview) {
+  document.getElementById("stat-projects").textContent = overview.totalProjects;
+  document.getElementById("stat-clicks").textContent = overview.totalClicks;
+  document.getElementById("stat-verified").textContent = overview.verifiedCount;
+}
+
+function renderGrid(projects) {
+  const grid = document.getElementById("projects-grid");
+  const empty = document.getElementById("empty-state");
+
+  if (!projects.length) {
+    grid.innerHTML = "";
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+
+  grid.innerHTML = projects
     .map(
       (p, i) => `
-    <tr>
-      <td>${p.domain}</td>
-      <td>${p.tagline || "-"}</td>
-      <td>${p.clickCount}</td>
-      <td class="${p.verified ? "verified" : "unverified"}">${p.verified ? "✓ Verified" : "Unverified"}</td>
-      <td><button onclick="toggleForm(${i})">Edit case study</button></td>
-    </tr>
-    <tr id="form-row-${i}" style="display:none;">
-      <td colspan="5">
-        <input placeholder="Problem solved" id="problem-${i}" style="width:100%; margin-bottom:6px;" />
-        <input placeholder="Tech used" id="tech-${i}" style="width:100%; margin-bottom:6px;" />
-        <input placeholder="Timeline (e.g. 2 weeks)" id="timeline-${i}" style="width:100%; margin-bottom:6px;" />
-        <button onclick="saveCaseStudy('${p.domain}', ${i})">Save</button>
-      </td>
-    </tr>
+    <div class="project-card">
+      <div class="project-card-head">
+        <div>
+          <h3>${p.name || p.domain}</h3>
+          <p>${p.domain}</p>
+        </div>
+        <span class="chip ${p.verified ? "verified" : "unverified"}">
+          ${p.verified ? "✓ Verified" : "Unverified"}
+        </span>
+      </div>
+      <div class="project-stats-row">
+        <div class="click-count">${p.clickCount}<span>clicks (all time)</span></div>
+      </div>
+      <canvas class="spark" id="spark-${i}"></canvas>
+      <div class="card-actions">
+        <button onclick="openEditModal(${i})">Edit</button>
+      </div>
+    </div>
   `
     )
     .join("");
 
-  document.getElementById("dashboard-content").innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>Domain</th>
-          <th>Tagline</th>
-          <th>Clicks</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
+  projects.forEach((p, i) => loadSparkline(p.domain, i));
 }
 
-function toggleForm(i) {
-  const row = document.getElementById(`form-row-${i}`);
-  row.style.display = row.style.display === "none" ? "table-row" : "none";
-}
-
-function saveCaseStudy(domain, i) {
-  const password = document.getElementById("password-input").value;
-  const problem = document.getElementById(`problem-${i}`).value;
-  const techUsed = document.getElementById(`tech-${i}`).value;
-  const timeline = document.getElementById(`timeline-${i}`).value;
-
-  fetch(`${API_BASE}/case-study/${encodeURIComponent(domain)}?password=${encodeURIComponent(password)}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ problem, techUsed, timeline }),
+function loadSparkline(domain, i) {
+  fetch(`${API_BASE}/dashboard/timeseries/${encodeURIComponent(domain)}?days=7`, {
+    headers: authHeaders(),
   })
     .then((res) => res.json())
-    .then(() => alert("Case study saved!"))
-    .catch(() => alert("Failed to save."));
+    .then((data) => {
+      const canvas = document.getElementById(`spark-${i}`);
+      if (!canvas || !window.Chart) return;
+      new Chart(canvas, {
+        type: "line",
+        data: {
+          labels: data.labels,
+          datasets: [
+            {
+              data: data.values,
+              borderColor: "#8b5cf6",
+              backgroundColor: "rgba(139,92,246,0.15)",
+              fill: true,
+              tension: 0.35,
+              pointRadius: 0,
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: true } },
+          scales: { x: { display: false }, y: { display: false } },
+        },
+      });
+    })
+    .catch(() => {});
 }
-  </script>
+
+function openEditModal(i) {
+  const p = PROJECTS_CACHE[i];
+  CURRENT_DOMAIN = p.domain;
+
+  document.getElementById("edit-modal-title").textContent = p.name || p.domain;
+  document.getElementById("edit-role").value = p.role || "";
+  document.getElementById("edit-avatarUrl").value = p.avatarUrl || "";
+  document.getElementById("edit-skills").value = (p.skills || []).join(", ");
+  document.getElementById("edit-resumeUrl").value = p.resumeUrl || "";
+  document.getElementById("edit-available").checked = !!p.available;
+  document.getElementById("edit-problem").value = (p.caseStudy && p.caseStudy.problem) || "";
+  document.getElementById("edit-tech").value = (p.caseStudy && p.caseStudy.techUsed) || "";
+  document.getElementById("edit-timeline").value = (p.caseStudy && p.caseStudy.timeline) || "";
+
+  document.getElementById("edit-overlay").classList.add("open");
+}
+
+document.getElementById("edit-cancel").addEventListener("click", () => {
+  document.getElementById("edit-overlay").classList.remove("open");
+});
+
+document.getElementById("edit-save").addEventListener("click", () => {
+  const profileBody = {
+    role: document.getElementById("edit-role").value,
+    avatarUrl: document.getElementById("edit-avatarUrl").value,
+    skills: document.getElementById("edit-skills").value,
+    resumeUrl: document.getElementById("edit-resumeUrl").value,
+    available: document.getElementById("edit-available").checked,
+  };
+  const caseStudyBody = {
+    problem: document.getElementById("edit-problem").value,
+    techUsed: document.getElementById("edit-tech").value,
+    timeline: document.getElementById("edit-timeline").value,
+  };
+
+  Promise.all([
+    fetch(`${API_BASE}/profile/${encodeURIComponent(CURRENT_DOMAIN)}`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify(profileBody),
+    }),
+    fetch(`${API_BASE}/case-study/${encodeURIComponent(CURRENT_DOMAIN)}`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify(caseStudyBody),
+    }),
+  ])
+    .then(() => {
+      document.getElementById("edit-overlay").classList.remove("open");
+      showToast("Saved!");
+      loadDashboard();
+    })
+    .catch(() => showToast("Failed to save.", "error"));
+});
+</script>
 </body>
 </html>

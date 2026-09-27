@@ -5,7 +5,16 @@ const { generateToken } = require("../crypto/signToken");
 
 router.post("/", async (req, res) => {
   try {
-    const { domain, name, tagline } = req.body;
+    const {
+      domain,
+      name,
+      tagline,
+      avatarUrl,
+      role,
+      skills,
+      available,
+      resumeUrl,
+    } = req.body;
 
     if (!domain) {
       return res.status(400).json({ error: "domain is required" });
@@ -19,6 +28,11 @@ router.post("/", async (req, res) => {
         domain,
         name,
         tagline,
+        avatarUrl,
+        role,
+        skills,
+        available,
+        resumeUrl,
         verified: true,
         verifiedToken: token,
       });
