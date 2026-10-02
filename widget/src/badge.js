@@ -11,7 +11,9 @@ const DEFAULT_CONFIG = {
   hireMeUrl: "",
   available: false,
   skills: [], // e.g. ["React", "Node.js", "MongoDB"]
-  position: "bottom-right", // bottom-right | bottom-left | top-right | top-left
+  position: "bottom-right", // bottom-right | bottom-left | top-right | top-left (floating mode ke liye)
+  container: null, // CSS selector (ya DOM element) — diya ho to badge floating corner ki jagah
+                    // isi element ke andar normal flow me lag jaayega (footer/dashboard section waghera)
   apiBaseUrl: "https://devmark-api-beta.vercel.app/api",
 };
 
@@ -46,7 +48,6 @@ function initDevMark(userConfig = {}) {
 
   const badge = document.createElement("div");
   badge.id = "devmark-badge";
-  badge.setAttribute("data-position", config.position);
   badge.setAttribute("role", "button");
   badge.setAttribute("tabindex", "0");
   badge.setAttribute("aria-label", `Built by ${config.name}. Click for details.`);
@@ -60,7 +61,32 @@ function initDevMark(userConfig = {}) {
     ${config.available ? `<span id="devmark-badge-dot" title="Available for work"></span>` : ""}
   `;
 
-  document.body.appendChild(badge);
+  // ---- Floating (default) vs Inline (container diya ho) mode decide karo ----
+  let mountTarget = document.body;
+  let isInline = false;
+
+  if (config.container) {
+    const target =
+      typeof config.container === "string"
+        ? document.querySelector(config.container)
+        : config.container;
+
+    if (target) {
+      mountTarget = target;
+      isInline = true;
+      badge.classList.add("devmark-inline");
+    } else {
+      console.warn(
+        `DevMark: container "${config.container}" nahi mila, floating badge fallback use ho raha hai.`
+      );
+    }
+  }
+
+  if (!isInline) {
+    badge.setAttribute("data-position", config.position);
+  }
+
+  mountTarget.appendChild(badge);
   const overlay = createOverlay(config, badge);
 
   let statsLoaded = false;
@@ -91,19 +117,21 @@ function initDevMark(userConfig = {}) {
     }
   });
 
-  // ---- Scroll pe collapse-to-avatar, idle hone pe wapas expand ----
-  let collapseTimer = null;
-  window.addEventListener(
-    "scroll",
-    () => {
-      badge.classList.add("devmark-collapsed");
-      clearTimeout(collapseTimer);
-      collapseTimer = setTimeout(() => {
-        badge.classList.remove("devmark-collapsed");
-      }, 1200);
-    },
-    { passive: true }
-  );
+  // ---- Scroll pe collapse-to-avatar sirf floating mode me (inline me iska matlab nahi) ----
+  if (!isInline) {
+    let collapseTimer = null;
+    window.addEventListener(
+      "scroll",
+      () => {
+        badge.classList.add("devmark-collapsed");
+        clearTimeout(collapseTimer);
+        collapseTimer = setTimeout(() => {
+          badge.classList.remove("devmark-collapsed");
+        }, 1200);
+      },
+      { passive: true }
+    );
+  }
 }
 
 window.DevMark = { init: initDevMark };

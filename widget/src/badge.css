@@ -96,6 +96,21 @@
 #devmark-badge[data-position="top-right"]   { bottom: auto; top: 18px; }
 #devmark-badge[data-position="top-left"]    { bottom: auto; top: 18px; right: auto; left: 18px; }
 
+/* ====== Inline mode — jab config.container diya ho (jaise footer/dashboard section) ====== */
+/* Ab badge fixed-floating corner me nahi, diye gaye container ke andar normal flow me baithta hai */
+#devmark-badge.devmark-inline {
+  position: static;
+  inset: auto;
+  bottom: auto; right: auto; top: auto; left: auto;
+  display: inline-flex;
+  animation: devmark-pop-in 0.3s ease forwards;
+  max-width: none;
+}
+#devmark-badge.devmark-inline:hover,
+#devmark-badge.devmark-inline:focus-visible {
+  transform: scale(1.02);
+}
+
 /* ====== Overlay ====== */
 #devmark-overlay {
   position: fixed;
@@ -166,7 +181,7 @@
 #devmark-role { margin: 2px 0 0; color: #a1a1aa; font-size: 12.5px; }
 #devmark-modal > p.devmark-tagline { margin: 10px 0 12px; color: #d4d4d8; }
 
-/* Verified badge — ab naam ke bagal me chhota inline checkmark */
+/* Verified badge — naam ke bagal me chhota inline checkmark */
 .devmark-verified-inline {
   display: inline-flex;
   align-items: center;
